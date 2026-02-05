@@ -5,14 +5,21 @@ This file contains the changelog for the Deeploy project. The changelog is divid
 
 
 ### List of Pull Requests
+- Improve Docstring and Debugging [#160](https://github.com/pulp-platform/Deeploy/pull/160)
 - Use Pre-Commit in CI [#159](https://github.com/pulp-platform/Deeploy/pull/159)
 - Deeploy-GAP9 Platform [#143](https://github.com/pulp-platform/Deeploy/pull/143)
 - Update CLI interface Across Project, Fix Tutorial, and Remove Legacy Test [#157](https://github.com/pulp-platform/Deeploy/pull/157)
 
 ### Added
+- Add many missing docstrings
+- Add `__repr__()` function for `_ReferenceBuffer` class
 - Added GAP9 Platform Support: Deployer, Bindings, Templates, Tiler, DMA (L3Dma/MchanDma), target library, CI workflows
 
 ### Changed
+- Move `MemoryAwareClosureGeneration` pass to `MemoryLevelExtension`
+- Move `MemoryAwarePrint*` passes to `MemoryLevelExtension`
+- Make `sizeInBytes` a class property instead of a function
+- Move `AnnotateNeurekaWeightMemoryLevel` to `Neureka` specific folder
 - Switch CI to use pre-commit for linting
 - Update `pulp-nnx` and `pulp-nn-mixed` submodules to their latest versions
 - PULP-NN moved to TargetLibraries third-party folder
