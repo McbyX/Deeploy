@@ -173,7 +173,7 @@ BasicMaxPool1DBindings = [
 ]
 
 BasicMaxPool2DBindings = [
-    NodeBinding(MaxPoolChecker([PointerClass(int8_t)], [PointerClass(int8_t)]), MaxPoolTemplate.referenceTemplate,
+    NodeBinding(MaxPoolChecker([PointerClass(int8_t)], [PointerClass(int8_t)]), MaxPoolTemplate.reference2DTemplate,
                 BasicTransformer)
 ] + [
     NodeBinding(MaxPoolChecker([PointerClass(float32_t)], [PointerClass(float32_t)]),

@@ -41,6 +41,6 @@ else:
     signatureString += '_u8'
 %>
 pulp_nn_maxpool${signatureString}(
-    ${data_in}, ${data_out}, 1, ${dim_im_in_y}, ${ch_im_in}, 1, ${dim_im_out_y}, 
+    ${data_in}, ${data_out}, 1, ${dim_im_in_y}, ${ch_im_in}, 1, ${dim_im_out_y},
     1, ${dim_kernel_y}, ${padding_y}, ${padding_y_right}, 0, 0, 1, ${stride_y});
 """)

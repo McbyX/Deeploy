@@ -28,7 +28,7 @@ class _MaxPoolTemplate(NodeTemplate):
         return ctxt, operatorRepresentation, []
 
 
-referenceTemplate = _MaxPoolTemplate("""
+reference2DTemplate = _MaxPoolTemplate("""
 <%
 batchOffsetIn = ch_im_in * dim_im_in_x * dim_im_in_y
 batchOffsetOut = ch_im_out * dim_im_out_x * dim_im_out_y
