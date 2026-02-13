@@ -839,7 +839,7 @@ class Conv1DTileConstraint(TileConstraint):
         #   Assume worst case scenario (data padding on all sides) when tiling on a ceratin dimension.
         effectiveInputLengthVar = inputLengthVar \
             + (sum(pads) * (inputLengthVar == inputBuffer.shape[1])) \
-            - ((inputLengthVar - 1) * (inputLengthVar != inputBuffer.shape[1]))
+            - ((weightLengthVar - 1) * (inputLengthVar != inputBuffer.shape[1]))
 
         _outputLengthVar = (effectiveInputLengthVar - dilation * (weightLengthVar - 1) - 1) // stride + 1
 
@@ -870,7 +870,7 @@ class Conv1DTileConstraint(TileConstraint):
 
         effectiveInputLength = inputLengthVar \
             + (sum(pads) * (inputLengthVar == inputBuffer.shape[1])) \
-            - (inputLengthVar - 1) * (inputLengthVar != inputBuffer.shape[1])
+            - (weightLengthVar - 1) * (inputLengthVar != inputBuffer.shape[1])
 
         tilerModel.addConstraint(inputChannelVar == parseDict['ch_im_in'])
         tilerModel.addConstraint(effectiveInputLength >= parseDict['dim_kernel_y'])
