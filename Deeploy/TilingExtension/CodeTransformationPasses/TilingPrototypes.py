@@ -189,45 +189,51 @@ class ProfilingPrototypeMixIn(ABC):
                 "profileIdxVar": profileIdxVar,
             })
 
-        executionBlock.addRight(
-            cls._printCycleDifference, {
-                "prefixStr": f"{nodeName}_prefix",
-                "suffixStr": f"{nodeName}_suffix",
-                "flavorStr": "Pre-Kernel :",
-                "measurement": f"{nodeName}_ingress_dma_wait_measurement",
-                "profileIdxVar": profileIdxVar,
-            })
+        # 按需求屏蔽搬运（DMA）时间打印：保留采样数据用于后续分析，但避免运行日志输出搬运耗时。
+        # executionBlock.addRight(
+        #     cls._printCycleDifference, {
+        #         "prefixStr": f"{nodeName}_prefix",
+        #         "suffixStr": f"{nodeName}_suffix",
+        #         "flavorStr": "Pre-Kernel :",
+        #         "measurement": f"{nodeName}_ingress_dma_wait_measurement",
+        #         "profileIdxVar": profileIdxVar,
+        #     })
 
         if metaInfo.kernelLevelTiling:
-            executionBlock.addRight(
-                cls._printCycleDifference, {
-                    "prefixStr": f"{nodeName}_prefix",
-                    "suffixStr": f"{nodeName}_suffix",
-                    "flavorStr": "Kernel     :",
-                    "measurement": f"{nodeName}_kernel_measurement",
-                    "profileIdxVar": profileIdxVar,
-                })
+            # 按需求屏蔽 kernel 计算时间打印：避免在 profiling 日志中输出 kernel 计算耗时。
+            # executionBlock.addRight(
+            #     cls._printCycleDifference, {
+            #         "prefixStr": f"{nodeName}_prefix",
+            #         "suffixStr": f"{nodeName}_suffix",
+            #         "flavorStr": "Kernel     :",
+            #         "measurement": f"{nodeName}_kernel_measurement",
+            #         "profileIdxVar": profileIdxVar,
+            #     })
+            pass
 
-        executionBlock.addRight(
-            cls._printCycleDifference, {
-                "prefixStr": f"{nodeName}_prefix",
-                "suffixStr": f"{nodeName}_suffix",
-                "flavorStr": "Post-Kernel:",
-                "measurement": f"{nodeName}_egress_dma_wait_measurement",
-                "profileIdxVar": profileIdxVar,
-            })
+        # 按需求屏蔽搬运（DMA）时间打印：避免运行日志输出回写搬运耗时。
+        # executionBlock.addRight(
+        #     cls._printCycleDifference, {
+        #         "prefixStr": f"{nodeName}_prefix",
+        #         "suffixStr": f"{nodeName}_suffix",
+        #         "flavorStr": "Post-Kernel:",
+        #         "measurement": f"{nodeName}_egress_dma_wait_measurement",
+        #         "profileIdxVar": profileIdxVar,
+        #     })
 
         # Total Time: Input + Kernel + Output
         # Overhead: (Input + Output) / Total
         if metaInfo.kernelLevelTiling:
-            executionBlock.addRight(
-                cls._printCycleContribution, {
-                    "prefixStr": f"{nodeName}_prefix",
-                    "measurementInput": f"{nodeName}_ingress_dma_wait_measurement",
-                    "measurementKernel": f"{nodeName}_kernel_measurement",
-                    "measurementOutput": f"{nodeName}_egress_dma_wait_measurement",
-                    "profileIdxVar": profileIdxVar,
-                })
+            # 按需求屏蔽总计打印：该行会同时包含 kernel 计算时间和搬运时间拆分信息。
+            # executionBlock.addRight(
+            #     cls._printCycleContribution, {
+            #         "prefixStr": f"{nodeName}_prefix",
+            #         "measurementInput": f"{nodeName}_ingress_dma_wait_measurement",
+            #         "measurementKernel": f"{nodeName}_kernel_measurement",
+            #         "measurementOutput": f"{nodeName}_egress_dma_wait_measurement",
+            #         "profileIdxVar": profileIdxVar,
+            #     })
+            pass
 
         executionBlock.addRight(cls._printLoopTeardown, {})
 
