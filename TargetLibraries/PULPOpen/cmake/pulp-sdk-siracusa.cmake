@@ -53,10 +53,21 @@ target_compile_options(pulp-sdk INTERFACE
 )
 
 
+# Work around L1 pi_malloc section-table overflows on large/generated workloads.
+# These symbols are consumed by Siracusa linker scripts in some PULP-SDK versions.
+# Keep them configurable to avoid hard-coding platform assumptions.
+set(siracusa_l1_section_table_size 0x1000 CACHE STRING "Override Siracusa L1 section-table size used by linker script")
+set(siracusa_link_script ${CMAKE_CURRENT_LIST_DIR}/../linker/chips/siracusa/link.ld CACHE STRING "Siracusa linker script path")
+
+set(SIRACUSA_LINK_SYMBOL_OVERRIDES
+  -Wl,--defsym=__l1_section_table_size=${siracusa_l1_section_table_size}
+)
+
 set(SIRACUSA_LINK_OPTIONS
   -Wl,--gc-sections
   -L${PULP_SDK_HOME}/rtos/pulpos/pulp/kernel
-  -Tchips/siracusa/link.ld
+  -T${siracusa_link_script}
+  ${SIRACUSA_LINK_SYMBOL_OVERRIDES}
 )
 
 target_link_libraries(pulp-sdk PUBLIC
