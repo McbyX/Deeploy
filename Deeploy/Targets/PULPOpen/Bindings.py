@@ -272,19 +272,7 @@ PULPMaxPool2DBindings = [
     NodeBinding(PULPMaxPoolChecker([PointerClass(float32_t)], [PointerClass(float32_t)]),
                 FloatMaxPoolTemplate.referenceTemplate, ForkTransformer)
 ]
-'''
-PULPConv1DBinding = NodeBinding(
-    PULPConvChecker(
-        [PointerClass(int8_t), PointerClass(int8_t),
-         PointerClass(int32_t),
-         PointerClass(int32_t)], [PointerClass(int8_t)]), ConvTemplate.PULPConv1D_8_Template, ForkTransformer)
 
-PULPDWConv1DBinding = NodeBinding(
-    PULPConvChecker(
-        [PointerClass(int8_t), PointerClass(int8_t),
-         PointerClass(int32_t),
-         PointerClass(int32_t)], [PointerClass(int8_t)]), ConvTemplate.PULPDWConv1D_8_Template, ForkTransformer)
-'''
 PULPConv1DBindings = [
     NodeBinding(
         PULPConvChecker([
@@ -308,7 +296,6 @@ PULPDWConv1DBindings = [
 ]
 
 PULPMatMulBindings = [
-    #NodeBinding(MatMulChecker([PointerClass(int8_t), PointerClass(int8_t)], [PointerClass(int32_t)]),
     NodeBinding(MatMulChecker([PointerClass(typeA), PointerClass(typeB)], [PointerClass(int32_t)]),
                 GEMMTemplate.PULPMM_8_Template, ClusterTransformer)
     for typeA, typeB in itertools.product([int8_t, uint8_t], [int8_t, uint8_t])
@@ -431,8 +418,6 @@ PULPiRQSGELUBindings = [
 PULPMulBindings = [
     NodeBinding(MulChecker([PointerClass(typeA), PointerClass(typeB)], [PointerClass(int32_t)]),
                 MulTemplate.referenceTemplate, ForkTransformer)
-    
-    #for typeA, typeB in itertools.product(SignedIntegerDataTypes, SignedIntegerDataTypes)
     for typeA, typeB in itertools.product(IntegerDataTypes, SignedIntegerDataTypes)
 ] + [
     NodeBinding(MulChecker([PointerClass(float32_t), PointerClass(float32_t)], [PointerClass(float32_t)]),
