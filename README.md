@@ -23,7 +23,7 @@ You can find the documentation at the following links:
 - [Devel Branch Docs](https://pulp-platform.github.io/Deeploy/branch/devel/)
 - [Main Branch Docs](https://pulp-platform.github.io/Deeploy/)
 
-A DeepWiki generated documentation is availabe [here](https://deepwiki.com/pulp-platform/Deeploy).
+A DeepWiki-generated documentation is available [here](https://deepwiki.com/pulp-platform/Deeploy).
 
 ## Getting started
 
