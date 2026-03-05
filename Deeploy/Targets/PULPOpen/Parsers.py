@@ -203,6 +203,7 @@ class PULPDWConv1DParser(RQSConv1DParser):
             if ret:
 
                 self.operatorRepresentation['dim_kernel_y'] = int(self.operatorRepresentation['kernel_shape'][0])
+                self.operatorRepresentation['dim_kernel_x'] = 1
                 self.operatorRepresentation['dilation_y'] = int(self.operatorRepresentation['dilations'][0])
                 self.operatorRepresentation['padding_y_top'] = int(self.operatorRepresentation['pads'][0])
                 self.operatorRepresentation['padding_y_bottom'] = int(self.operatorRepresentation['pads'][1])
@@ -358,6 +359,7 @@ class PULPConv1DParser(RQSConv1DParser):
             ])
 
             self.operatorRepresentation['dim_kernel_y'] = int(self.operatorRepresentation['kernel_shape'][0])
+            self.operatorRepresentation['dim_kernel_x'] = 1
             self.operatorRepresentation['dilation_y'] = int(self.operatorRepresentation['dilations'][0])
             self.operatorRepresentation['padding_y_top'] = int(self.operatorRepresentation['pads'][0])
             self.operatorRepresentation['padding_y_bottom'] = int(self.operatorRepresentation['pads'][1])

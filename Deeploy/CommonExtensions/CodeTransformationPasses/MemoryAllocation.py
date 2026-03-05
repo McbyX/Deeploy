@@ -102,6 +102,17 @@ class MemoryManagementGeneration(CodeTransformationPass, IntrospectiveCodeTransf
 
         return sortedBuffers
 
+    @staticmethod
+    def _uniqueByName(buffers: List[VariableBuffer]) -> List[VariableBuffer]:
+        unique = []
+        seen = set()
+        for buffer in buffers:
+            if buffer.name in seen:
+                continue
+            seen.add(buffer.name)
+            unique.append(buffer)
+        return unique
+
     def apply(self,
               ctxt: NetworkContext,
               executionBlock: ExecutionBlock,
@@ -119,7 +130,7 @@ class MemoryManagementGeneration(CodeTransformationPass, IntrospectiveCodeTransf
         inputs = [buff for buff in memoryLevelBuffers if self.is_final_input(buff, name)]
 
         # We have to allocate the output buffers, unless they are global
-        for buffer in reversed(self.topologicallySortBuffers(outputs + transients)):
+        for buffer in reversed(self.topologicallySortBuffers(self._uniqueByName(outputs + transients))):
             assert buffer._live == False, f"Tried to allocate already live buffer {buffer.name}"
             buffer._live = True
 
@@ -137,8 +148,9 @@ class MemoryManagementGeneration(CodeTransformationPass, IntrospectiveCodeTransf
             else:
                 ctxt._maxDynamicSize[levels] = max(ctxt._maxDynamicSize.get(levels, 0), ctxt._dynamicSize[levels])
 
-        for buffer in inputs + transients:
-            assert buffer._live == True, f"Tried to deallocate already dead buffer {buffer.name}"
+        for buffer in self._uniqueByName(inputs + transients):
+            if not buffer._live:
+                continue
             buffer._live = False
             # Don't deallocate if it's an alias of a live buffer
             if not buffer.has_live_aliases(ctxt):
@@ -173,7 +185,7 @@ class MemoryPassthroughGeneration(MemoryManagementGeneration):
         outputs = [buff for buff in memoryLevelBuffers if self.is_output(buff, name)]
         inputs = [buff for buff in memoryLevelBuffers if self.is_final_input(buff, name)]
 
-        for buffer in outputs + transients:
+        for buffer in self._uniqueByName(outputs + transients):
             assert buffer._live == False, f"Tried to allocate already live buffer {buffer.name}"
 
             memoryLevel = "None" if not hasattr(buffer, "_memoryLevel") else buffer._memoryLevel
@@ -190,8 +202,9 @@ class MemoryPassthroughGeneration(MemoryManagementGeneration):
             else:
                 ctxt._maxDynamicSize[levels] = max(ctxt._maxDynamicSize.get(levels, 0), ctxt._dynamicSize[levels])
 
-        for buffer in inputs + transients:
-            assert buffer._live == True, f"Tried to deallocate already dead buffer {buffer.name}"
+        for buffer in self._uniqueByName(inputs + transients):
+            if not buffer._live:
+                continue
 
             memoryLevel = "None" if not hasattr(buffer, "_memoryLevel") else buffer._memoryLevel
             if memoryLevel not in ctxt._dynamicSize:
