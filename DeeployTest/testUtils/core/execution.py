@@ -3,9 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import selectors
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from Deeploy.Logging import DEFAULT_LOGGER as log
@@ -195,17 +197,33 @@ def run_simulation(config: DeeployTestConfig, skip: bool = False) -> TestResult:
                           text = True,
                           env = env,
                           bufsize = 1) as proc:
+        assert proc.stdout is not None
+
+        sel = selectors.DefaultSelector()
+        sel.register(proc.stdout, selectors.EVENT_READ)
+        start_time = time.monotonic()
+
         try:
-            assert proc.stdout is not None
+            while True:
+                if timeout_s > 0 and (time.monotonic() - start_time) > timeout_s:
+                    proc.kill()
+                    raise RuntimeError(f"Simulation timed out after {timeout_s}s for {config.test_name}")
 
-            for out_line in proc.stdout:
-                stdout_chunks.append(out_line)
-                print(out_line, end = '')
+                events = sel.select(timeout = 0.5)
+                if events:
+                    chunk = proc.stdout.read(1)
+                    if chunk:
+                        stdout_chunks.append(chunk)
+                        print(chunk, end = '')
 
-            proc.wait(timeout = timeout_s if timeout_s > 0 else None)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            raise RuntimeError(f"Simulation timed out after {timeout_s}s for {config.test_name}")
+                if proc.poll() is not None:
+                    remaining = proc.stdout.read()
+                    if remaining:
+                        stdout_chunks.append(remaining)
+                        print(remaining, end = '')
+                    break
+        finally:
+            sel.close()
 
     stdout_text = ''.join(stdout_chunks)
     stderr_text = ''
