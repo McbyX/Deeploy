@@ -3,9 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import selectors
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from Deeploy.Logging import DEFAULT_LOGGER as log
@@ -183,15 +185,51 @@ def run_simulation(config: DeeployTestConfig, skip: bool = False) -> TestResult:
 
     log.debug(f"[Execution] Simulation command: {' '.join(cmd)}")
 
-    result = subprocess.run(cmd, capture_output = True, text = True, env = env)
+    timeout_s = int(os.environ.get("DEEPLOY_SIM_TIMEOUT_S", "0"))
+    if timeout_s > 0:
+        log.info(f"[Execution] Simulation timeout enabled: {timeout_s}s")
 
-    if result.stdout:
-        print(result.stdout, end = '')
-    if result.stderr:
-        print(result.stderr, end = '', file = sys.stderr)
+    stdout_chunks = []
+
+    with subprocess.Popen(cmd,
+                          stdout = subprocess.PIPE,
+                          stderr = subprocess.STDOUT,
+                          text = True,
+                          env = env,
+                          bufsize = 1) as proc:
+        assert proc.stdout is not None
+
+        sel = selectors.DefaultSelector()
+        sel.register(proc.stdout, selectors.EVENT_READ)
+        start_time = time.monotonic()
+
+        try:
+            while True:
+                if timeout_s > 0 and (time.monotonic() - start_time) > timeout_s:
+                    proc.kill()
+                    raise RuntimeError(f"Simulation timed out after {timeout_s}s for {config.test_name}")
+
+                events = sel.select(timeout = 0.5)
+                if events:
+                    chunk = proc.stdout.read(1)
+                    if chunk:
+                        stdout_chunks.append(chunk)
+                        print(chunk, end = '')
+
+                if proc.poll() is not None:
+                    remaining = proc.stdout.read()
+                    if remaining:
+                        stdout_chunks.append(remaining)
+                        print(remaining, end = '')
+                    break
+        finally:
+            sel.close()
+
+    stdout_text = ''.join(stdout_chunks)
+    stderr_text = ''
 
     # Parse output for error count and cycles
-    test_result = parse_test_output(result.stdout, result.stderr)
+    test_result = parse_test_output(stdout_text, stderr_text)
 
     if not test_result.success and test_result.error_count == -1:
         log.warning(f"Could not parse error count from output")
