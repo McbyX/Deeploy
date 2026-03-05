@@ -183,15 +183,35 @@ def run_simulation(config: DeeployTestConfig, skip: bool = False) -> TestResult:
 
     log.debug(f"[Execution] Simulation command: {' '.join(cmd)}")
 
-    result = subprocess.run(cmd, capture_output = True, text = True, env = env)
+    timeout_s = int(os.environ.get("DEEPLOY_SIM_TIMEOUT_S", "0"))
+    if timeout_s > 0:
+        log.info(f"[Execution] Simulation timeout enabled: {timeout_s}s")
 
-    if result.stdout:
-        print(result.stdout, end = '')
-    if result.stderr:
-        print(result.stderr, end = '', file = sys.stderr)
+    stdout_chunks = []
+
+    with subprocess.Popen(cmd,
+                          stdout = subprocess.PIPE,
+                          stderr = subprocess.STDOUT,
+                          text = True,
+                          env = env,
+                          bufsize = 1) as proc:
+        try:
+            assert proc.stdout is not None
+
+            for out_line in proc.stdout:
+                stdout_chunks.append(out_line)
+                print(out_line, end = '')
+
+            proc.wait(timeout = timeout_s if timeout_s > 0 else None)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            raise RuntimeError(f"Simulation timed out after {timeout_s}s for {config.test_name}")
+
+    stdout_text = ''.join(stdout_chunks)
+    stderr_text = ''
 
     # Parse output for error count and cycles
-    test_result = parse_test_output(result.stdout, result.stderr)
+    test_result = parse_test_output(stdout_text, stderr_text)
 
     if not test_result.success and test_result.error_count == -1:
         log.warning(f"Could not parse error count from output")
