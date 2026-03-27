@@ -15,6 +15,32 @@ from Deeploy.Logging import DEFAULT_LOGGER as log
 from .config import DeeployTestConfig
 from .output_parser import TestResult, parse_test_output
 
+def _resolve_pc_symbol(config: DeeployTestConfig, pc: str) -> str:
+    binary_path = Path(config.build_dir) / "bin" / config.test_name
+    if not binary_path.exists():
+        return "binary not found"
+
+    candidates = []
+    if config.toolchain_install_dir:
+        candidates.append(Path(config.toolchain_install_dir) / "bin" / "llvm-addr2line")
+        candidates.append(Path(config.toolchain_install_dir) / "bin" / "addr2line")
+    candidates.extend(["llvm-addr2line", "addr2line"])
+
+    for tool in candidates:
+        tool_path = str(tool)
+        if not shutil.which(tool_path):
+            continue
+        try:
+            result = subprocess.run([tool_path, "-f", "-C", "-e", str(binary_path), pc],
+                                    capture_output = True,
+                                    text = True,
+                                    check = False)
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+        except Exception:
+            continue
+
+    return "addr2line unavailable"
 
 def generate_network(config: DeeployTestConfig, skip: bool = False) -> None:
     """
@@ -233,6 +259,12 @@ def run_simulation(config: DeeployTestConfig, skip: bool = False) -> TestResult:
 
     if not test_result.success and test_result.error_count == -1:
         log.warning(f"Could not parse error count from output")
+        if test_result.crash_pc is not None:
+            log.warning(
+                f"Detected invalid memory access at pc={test_result.crash_pc}, offset={test_result.crash_offset}, "
+                f"size={test_result.crash_size}, source={test_result.crash_path}")
+            symbol_info = _resolve_pc_symbol(config, test_result.crash_pc)
+            log.warning(f"addr2line({test_result.crash_pc}) -> {symbol_info}")
 
     return test_result
 

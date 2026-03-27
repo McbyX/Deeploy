@@ -59,12 +59,29 @@ BasicConv1DBindings = [
         [PointerClass(type), PointerClass(type), PointerClass(type)], [PointerClass(type)]),
                 FloatConvTemplate.reference1DTemplate, BasicTransformer) for type in FloatDataTypes
 ] + [
+    NodeBinding(ConvChecker(
+        [PointerClass(type), PointerClass(type)], [PointerClass(type)]),
+                FloatConvTemplate.reference1DTemplate, BasicTransformer) for type in FloatDataTypes
+] + [
     NodeBinding(ConvChecker([PointerClass(int8_t), PointerClass(int8_t)], [PointerClass(int32_t)]),
                 ConvTemplate.reference1DTemplate, BasicTransformer)
 ]
 
-BasicDWConv1DBinding = NodeBinding(ConvChecker([PointerClass(int8_t), PointerClass(int8_t)], [PointerClass(int32_t)]),
-                                   DWConvTemplate.reference1DTemplate, BasicTransformer)
+BasicDWConv1DBindings = [
+    NodeBinding(
+        ConvChecker([PointerClass(type), PointerClass(type), PointerClass(type)], [PointerClass(type)]),
+        FloatDWConvTemplate.reference1DTemplate, BasicTransformer) for type in FloatDataTypes
+] + [
+    NodeBinding(
+        ConvChecker([PointerClass(type), PointerClass(type)], [PointerClass(type)]),
+        FloatDWConvTemplate.reference1DTemplate, BasicTransformer) for type in FloatDataTypes
+] + [
+    NodeBinding(ConvChecker([PointerClass(int8_t), PointerClass(int8_t)], [PointerClass(int32_t)]),
+                DWConvTemplate.reference1DTemplate, BasicTransformer)
+]
+
+# Backward compatibility for existing imports expecting a single integer binding.
+BasicDWConv1DBinding = BasicDWConv1DBindings[-1]
 
 BasicConv2DBindings = [
     NodeBinding(ConvChecker([PointerClass(int8_t), PointerClass(int8_t)], [PointerClass(int32_t)]),

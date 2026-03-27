@@ -21,6 +21,7 @@ from Deeploy.DeeployTypes import _NoVerbosity
 from Deeploy.Logging import DEFAULT_LOGGER as log
 from Deeploy.Targets.CortexM.Platform import CMSISPlatform
 from Deeploy.Targets.PULPOpen.Platform import PULPClusterEngine, PULPPlatform
+from Deeploy.Targets.PULPOpen.TopologyOptimizationPasses.Passes import PULPConvRequantMergePass
 
 
 def generateNetwork(args):
@@ -138,6 +139,14 @@ def generateNetwork(args):
     ) and not "CNN_Linear1" in args.dir and not "GEMM/Regular_RQPerRow" in args.dir and not "MatMul/Regular_RQ" in args.dir:
         deployer.loweringOptimizer.passes.insert(0, EmulateCMSISRequantPass())
 
+    # WaveFormer on Siracusa currently crashes in the first merged Conv+RQ block.
+    # Keep Conv and RequantShift separated to avoid allocator corruption caused by
+    # the merged kernel path.
+    if "WaveFormer" in args.dir and isinstance(platform, PULPPlatform):
+        deployer.loweringOptimizer.passes = [
+            opt_pass for opt_pass in deployer.loweringOptimizer.passes if not isinstance(opt_pass, PULPConvRequantMergePass)
+        ]
+    
     verbosityCfg = _NoVerbosity
     if isinstance(platform, PULPPlatform):
         verbosityCfg.untiledProfiling = args.profileUntiled

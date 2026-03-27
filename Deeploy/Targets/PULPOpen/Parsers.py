@@ -8,8 +8,8 @@ from typing import Tuple
 import onnx_graphsurgeon as gs
 
 from Deeploy.DeeployTypes import NetworkContext
-from Deeploy.Targets.Generic.Parsers import Conv2DParser, GEMMParser, ReduceMeanParser, RQSConv1DParser, \
-    RQSConv2DParser, RQSParserInterface
+from Deeploy.Targets.Generic.Parsers import Conv1DParser, Conv2DParser, GEMMParser, ReduceMeanParser, \
+    RQSConv1DParser, RQSConv2DParser, RQSParserInterface
 
 
 class PULPConv2DParser(RQSConv2DParser):
@@ -176,6 +176,89 @@ class PULPFPDWConv2DParser(Conv2DParser):
                 self.operatorRepresentation[inputs[idx]] = ctxt.lookup(inputNode.name).name
 
             # Check if DW
+            if self.operatorRepresentation['group'] == self.operatorRepresentation['ch_im_in']:
+                return newCtxt, True
+
+        return ctxt, False
+
+
+class PULPPlainConv1DParser(Conv1DParser):
+
+    def __init__(self, noBiasHoisting = True):
+        super().__init__(noBiasHoisting)
+
+    def parseNode(self, node: gs.Node) -> (bool):
+        wellFormed = super().parseNode(node)
+
+        if wellFormed:
+            ret = all([
+                self.operatorRepresentation['group'] == 1,
+                self.operatorRepresentation['pads'][0] == self.operatorRepresentation['pads'][1],
+                all([coeff == 1 for coeff in self.operatorRepresentation['dilations']]),
+            ])
+
+            return ret
+
+    def parseNodeCtxt(self,
+                      ctxt: NetworkContext,
+                      node: gs.Node,
+                      channels_first: bool = True) -> Tuple[NetworkContext, bool]:
+
+        newCtxt, ret = super().parseNodeCtxt(ctxt, node, channels_first)
+
+        if ret:
+            inputs = ['data_in', 'weight']
+
+            if len(node.inputs) > 2:
+                inputs.append("bias")
+                self.operatorRepresentation["has_bias"] = 1
+            else:
+                self.operatorRepresentation["has_bias"] = 0
+                self.operatorRepresentation["bias"] = "NULL"
+
+            for idx, inputNode in enumerate(node.inputs):
+                self.operatorRepresentation[inputs[idx]] = ctxt.lookup(inputNode.name).name
+
+            return newCtxt, True
+
+        return ctxt, False
+
+
+class PULPPlainDWConv1DParser(Conv1DParser):
+
+    def __init__(self, noBiasHoisting = True):
+        super().__init__(noBiasHoisting)
+
+    def parseNode(self, node: gs.Node) -> (bool):
+        wellFormed = super().parseNode(node)
+
+        if wellFormed:
+            ret = all([
+                self.operatorRepresentation['pads'][0] == self.operatorRepresentation['pads'][1],
+                all([coeff == 1 for coeff in self.operatorRepresentation['dilations']]),
+            ])
+
+            return ret
+
+    def parseNodeCtxt(self,
+                      ctxt: NetworkContext,
+                      node: gs.Node,
+                      channels_first: bool = True) -> Tuple[NetworkContext, bool]:
+
+        newCtxt, ret = super().parseNodeCtxt(ctxt, node, channels_first)
+
+        if ret:
+            inputs = ['data_in', 'weight']
+            if len(node.inputs) > 2:
+                inputs.append("bias")
+                self.operatorRepresentation["has_bias"] = 1
+            else:
+                self.operatorRepresentation["has_bias"] = 0
+                self.operatorRepresentation["bias"] = "NULL"
+
+            for idx, inputNode in enumerate(node.inputs):
+                self.operatorRepresentation[inputs[idx]] = ctxt.lookup(inputNode.name).name
+
             if self.operatorRepresentation['group'] == self.operatorRepresentation['ch_im_in']:
                 return newCtxt, True
 

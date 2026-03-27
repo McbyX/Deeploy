@@ -40,12 +40,20 @@ BEGIN_SINGLE_CORE
     ${data_out_type.typeName} ref_${data_out}_${data_out} = ${data_out};
 
     for (uint32_t n=0; n<${batch}; ++n) {
-        DWConv2d_s${data_in_type.referencedType.typeWidth}_s${weight_type.referencedType.typeWidth}_s${data_out_type.referencedType.typeWidth}_NCHW(
-            ref_${data_out}_${data_in}, ${ch_im_in}, 1, ${dim_im_in_y},
-            ${weight}, 1, ${dim_kernel_y},
-            1, ${stride_y},
-            ref_${data_out}_${data_out}, ${input_offset}, ${output_offset}
-        );
+        for (uint32_t c=0; c<${ch_im_in}; ++c) {
+            for (uint32_t oy=0; oy<${dim_im_out_y}; ++oy) {
+                ${data_out_type.referencedType.typeName} acc = 0;
+                for (uint32_t ky=0; ky<${dim_kernel_y}; ++ky) {
+                    int32_t iy = (int32_t)oy * ${stride_y} + (int32_t)ky - ${padding_y};
+                    if (iy >= 0 && iy < ${dim_im_in_y}) {
+                        ${data_in_type.referencedType.typeName} inVal = ref_${data_out}_${data_in}[c * ${dim_im_in_y} + iy];
+                        ${weight_type.referencedType.typeName} wVal = ${weight}[c * ${dim_kernel_y} + ky];
+                        acc += (inVal + ${input_offset}) * wVal;
+                    }
+                }
+                ref_${data_out}_${data_out}[c * ${dim_im_out_y} + oy] = acc + ${output_offset};
+            }
+        }
         ref_${data_out}_${data_in} += ${batchOffsetIn};
         ref_${data_out}_${data_out} += ${batchOffsetOut};
     }

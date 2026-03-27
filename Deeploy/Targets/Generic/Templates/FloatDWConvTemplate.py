@@ -29,3 +29,36 @@ BEGIN_SINGLE_CORE
     }
 END_SINGLE_CORE
 """)
+
+reference1DTemplate = NodeTemplate("""
+<%
+batchOffsetIn = ch_im_in * dim_im_in_y
+batchOffsetOut = ch_im_out * dim_im_out_y
+chMultiplier = ch_im_out // ch_im_in
+%>
+// 1D FP Depth-wise Conv (Name: ${nodeName}, Op: ${nodeOp})
+BEGIN_SINGLE_CORE
+    ${data_in_type.typeName} ref_${data_out}_${data_in} = ${data_in};
+    ${data_out_type.typeName} ref_${data_out}_${data_out} = ${data_out};
+    for (uint32_t n=0; n<${batch}; ++n) {
+        for (uint32_t oc=0; oc<${ch_im_out}; ++oc) {
+            uint32_t ic = oc / ${chMultiplier};
+            for (uint32_t oy=0; oy<${dim_im_out_y}; ++oy) {
+                ${data_out_type.referencedType.typeName} acc = 0;
+                if (${has_bias}) {
+                    acc = ${bias}[oc];
+                }
+                for (uint32_t ky=0; ky<${dim_kernel_y}; ++ky) {
+                    int32_t iy = (int32_t)oy * ${stride_y} + (int32_t)ky - ${padding_y};
+                    if (iy >= 0 && iy < ${dim_im_in_y}) {
+                        acc += ref_${data_out}_${data_in}[ic * ${dim_im_in_y} + iy] * ${weight}[oc * ${dim_kernel_y} + ky];
+                    }
+                }
+                ref_${data_out}_${data_out}[oc * ${dim_im_out_y} + oy] = acc;
+            }
+        }
+        ref_${data_out}_${data_in} += ${batchOffsetIn};
+        ref_${data_out}_${data_out} += ${batchOffsetOut};
+    }
+END_SINGLE_CORE
+""")

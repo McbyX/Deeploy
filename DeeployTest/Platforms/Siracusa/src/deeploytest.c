@@ -11,6 +11,9 @@
 #include "testinputs.h"
 #include "testoutputs.h"
 
+//#define MAINSTACKSIZE 8000
+//#define SLAVESTACKSIZE 3800
+
 #define MAINSTACKSIZE 8000
 #define SLAVESTACKSIZE 3800
 
