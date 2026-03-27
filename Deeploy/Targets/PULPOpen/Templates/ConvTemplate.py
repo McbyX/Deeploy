@@ -88,7 +88,10 @@ class PULP1DConvTemplate(NodeTemplate):
     def computeTransientBuffersSize(
             ctxt: NetworkContext,
             operatorRepresentation: OperatorRepresentation) -> List[Tuple[str, Union[int, IntVar]]]:
-        im2col_dim = 8 * (1 * (1 + operatorRepresentation['pads'][0]) + operatorRepresentation['dim_kernel_y'])
+        # Keep sizing consistent with 2D im2col kernels (kernel_x == 1 for 1D).
+        # Using only padding-derived sizing underestimates the required scratch space
+        # when ch_im_in or dim_kernel_y are large and can cause runtime memory overflow.
+        im2col_dim = 2 * 8 * (operatorRepresentation['ch_im_in'] * operatorRepresentation['dim_kernel_y'])
         im2col_name = operatorRepresentation['nodeName'] + "_buffer"
         return [(im2col_name, im2col_dim)]
 

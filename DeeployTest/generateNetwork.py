@@ -142,6 +142,7 @@ def generateNetwork(args):
     # WaveFormer on Siracusa currently crashes in the first merged Conv+RQ block.
     # Keep Conv and RequantShift separated to avoid allocator corruption caused by
     # the merged kernel path.
+    
     if "WaveFormer" in args.dir and isinstance(platform, PULPPlatform):
         deployer.loweringOptimizer.passes = [
             opt_pass for opt_pass in deployer.loweringOptimizer.passes if not isinstance(opt_pass, PULPConvRequantMergePass)
